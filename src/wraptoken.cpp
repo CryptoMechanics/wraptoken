@@ -356,14 +356,14 @@ void token::deposit(name receiver, name code)
     print("receiver: ", receiver, "\n");
     print("code: ", code, "\n");
     
-    extended_asset xquantity = extended_asset(transfer_data.quantity, code);
+    extended_asset xquantity = extended_asset(transfer_data.quantity, receiver);
 
     //if incoming transfer
     if (transfer_data.from == "eosio.stake"_n) return ; //ignore unstaking transfers
-    else if (transfer_data.to == get_self() && code != get_self()){ 
+    else if (transfer_data.to == get_self() && receiver != get_self()){
       //ignore outbound transfers from this contract, as well as inbound transfers of tokens internal to this contract
       //otherwise, means it's a deposit of external token from user
-      add_external_balance(transfer_data.from, xquantity, transfer_data.from);
+      add_external_balance(transfer_data.from, xquantity, get_self());
 
     }
 
