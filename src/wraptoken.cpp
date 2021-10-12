@@ -149,7 +149,7 @@ void token::emitxfer(const token::xfer& xfer){
 
 void token::retire(const name& owner,  const asset& quantity, const name& beneficiary )
 {
-    require_auth( _self );
+    require_auth( owner );
 
     auto sym = quantity.symbol;
     check( sym.is_valid(), "invalid symbol name" );
