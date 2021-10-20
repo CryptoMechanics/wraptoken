@@ -36,6 +36,9 @@ void token::create(const name& caller, const uint64_t proof_id, const asset&  ma
 {
     require_auth( caller );
 
+    // todo - change process to expect setcode and carry out updateauth action
+    // todo - adjust statstable, so that contains dest_contract (and maybe dest_symbol)
+
     auto sym = maximum_supply.symbol;
     check( sym.is_valid(), "invalid symbol name" );
     check( maximum_supply.is_valid(), "invalid supply");
@@ -95,7 +98,7 @@ void token::issue(const name& caller, const uint64_t proof_id)
     check(chain_itr!= cid_index.end(), "chain not supported");
 
     check(proof.action.account == chain_itr->wrap_contract, "action must originate from lock contract");
-    check(proof.action.name == "lock"_n, "must provide proof of token locking before issuing");
+    check(proof.action.name == "emitxfer"_n, "must provide proof of token locking before issuing");
 
     const auto& st = *existing;
     //check( to == st.issuer, "tokens can only be issued to issuer account" );
@@ -379,6 +382,12 @@ void token::withdraw(const name& caller, const uint64_t proof_id){
     token::xfer redeem_act = unpack<token::xfer>(proof.action.data);
    
     add_or_assert(proof, caller);
+
+    auto cid_index = _chainstable.get_index<"chainid"_n>();
+    auto chain_itr = cid_index.find(proof.chain_id);
+    check(chain_itr!= cid_index.end(), "chain not supported");
+    check(proof.action.account == chain_itr->wrap_contract, "action must originate from retire contract");
+    check(proof.action.name == "emitxfer"_n, "must provide proof of token retiring before issuing");
 
     sub_reserve(redeem_act.quantity);
     
