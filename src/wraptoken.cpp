@@ -36,9 +36,6 @@ void token::create(const name& caller, const uint64_t proof_id, const asset&  ma
 {
     require_auth( caller );
 
-    // todo - change process to expect setcode and carry out updateauth action
-    // todo - adjust statstable, so that contains dest_contract (and maybe dest_symbol)
-
     auto sym = maximum_supply.symbol;
     check( sym.is_valid(), "invalid symbol name" );
     check( maximum_supply.is_valid(), "invalid supply");
@@ -119,7 +116,7 @@ void token::issue(const name& caller, const uint64_t proof_id)
 }
 
 //locks a token amount in the reserve for an interchain transfer
-void token::lock(const name& owner,  const extended_asset& quantity, const name& beneficiary ){
+void token::lock(const name& owner,  const extended_asset& quantity, const name& beneficiary, const checksum256& beneficiary_chain_id ){
 
   require_auth(owner);
 
@@ -131,7 +128,8 @@ void token::lock(const name& owner,  const extended_asset& quantity, const name&
   token::xfer x = {
     .owner = owner,
     .quantity = quantity,
-    .beneficiary = beneficiary
+    .beneficiary = beneficiary,
+    .beneficiary_chain_id = beneficiary_chain_id
   };
 
   action act(
@@ -150,7 +148,7 @@ void token::emitxfer(const token::xfer& xfer){
 
 }
 
-void token::retire(const name& owner,  const asset& quantity, const name& beneficiary )
+void token::retire(const name& owner,  const asset& quantity, const name& beneficiary, const checksum256& beneficiary_chain_id )
 {
     require_auth( owner );
 
@@ -176,7 +174,8 @@ void token::retire(const name& owner,  const asset& quantity, const name& benefi
     token::xfer x = {
       .owner = owner,
       .quantity = extended_asset(quantity, existing->source_contract),
-      .beneficiary = beneficiary
+      .beneficiary = beneficiary,
+      .beneficiary_chain_id = beneficiary_chain_id
     };
 
     action act(
@@ -366,7 +365,7 @@ void token::deposit(name receiver, name code)
     else if (transfer_data.to == get_self() && receiver != get_self()){
       //ignore outbound transfers from this contract, as well as inbound transfers of tokens internal to this contract
       //otherwise, means it's a deposit of external token from user
-      add_external_balance(transfer_data.from, xquantity, get_self());
+      add_external_balance(transfer_data.from, xquantity, transfer_data.from);
 
     }
 

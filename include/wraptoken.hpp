@@ -11,7 +11,7 @@ namespace eosiosystem {
 
 namespace eosio {
 
-   const name bridge_contract = "newbridge"_n;
+   const name bridge_contract = "andybridge1"_n;
 
    using std::string;
 
@@ -120,6 +120,7 @@ namespace eosio {
            name             owner;
            extended_asset   quantity;
            name             beneficiary;
+           checksum256      beneficiary_chain_id;
          };
 
          [[eosio::action]]
@@ -130,13 +131,13 @@ namespace eosio {
 
 
          [[eosio::action]]
-         void lock(const name& owner,  const extended_asset& quantity, const name& beneficiary );
+         void lock(const name& owner,  const extended_asset& quantity, const name& beneficiary, const checksum256& beneficiary_chain_id );
 
          [[eosio::action]]
          void withdraw(const name& caller, const uint64_t proof_id);
       
          [[eosio::action]]
-         void retire(const name& owner,  const asset& quantity, const name& beneficiary );
+         void retire(const name& owner,  const asset& quantity, const name& beneficiary, const checksum256& beneficiary_chain_id );
 
 
          [[eosio::action]]
