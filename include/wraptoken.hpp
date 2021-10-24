@@ -2,6 +2,7 @@
 
 #include <eosio/asset.hpp>
 #include <eosio/eosio.hpp>
+#include <eosio/singleton.hpp>
 
 #include <string>
 
@@ -30,6 +31,12 @@ namespace eosio {
           std::string   memo;
         };
 
+         struct [[eosio::table]] global {
+            checksum256   chain_id;
+            name          token_contract;
+            checksum256   paired_chain_id;
+            name          paired_wraptoken_contract;
+         } globalrow;
 
          struct [[eosio::table]] account {
             asset    balance;
@@ -55,22 +62,6 @@ namespace eosio {
             name          issuer;
 
             uint64_t primary_key()const { return supply.symbol.code().raw(); }
-         };
-
-
-         struct [[eosio::table]] chain {
-
-           uint64_t id;
-           
-           checksum256 chain_id;
-
-           name wrap_contract;
-
-           uint64_t primary_key()const { return id; }
-           checksum256 by_chain_id()const { return chain_id; }
-
-           EOSLIB_SERIALIZE( chain, (id)(chain_id)(wrap_contract))
-
          };
 
 
@@ -120,8 +111,11 @@ namespace eosio {
            name             owner;
            extended_asset   quantity;
            name             beneficiary;
-           checksum256      beneficiary_chain_id;
          };
+
+
+         [[eosio::action]]
+         void init(const checksum256& chain_id, const name& token_contract, const checksum256& paired_chain_id, const name& paired_wraptoken_contract);
 
          [[eosio::action]]
          void create(const name& caller, const uint64_t proof_id, const asset&  maximum_supply);
@@ -131,13 +125,13 @@ namespace eosio {
 
 
          [[eosio::action]]
-         void lock(const name& owner,  const extended_asset& quantity, const name& beneficiary, const checksum256& beneficiary_chain_id );
+         void lock(const name& owner,  const extended_asset& quantity, const name& beneficiary);
 
          [[eosio::action]]
          void withdraw(const name& caller, const uint64_t proof_id);
       
          [[eosio::action]]
-         void retire(const name& owner,  const asset& quantity, const name& beneficiary, const checksum256& beneficiary_chain_id );
+         void retire(const name& owner,  const asset& quantity, const name& beneficiary);
 
 
          [[eosio::action]]
@@ -152,12 +146,6 @@ namespace eosio {
 
          [[eosio::action]]
          void close( const name& owner, const symbol& symbol );
-
-         [[eosio::action]]
-         void addchain(const checksum256& chain_id, const name& wrap_contract);
-
-         [[eosio::action]]
-         void delchain(const checksum256& chain_id);
 
          [[eosio::action]]
          void emitxfer(const token::xfer& xfer);
@@ -191,30 +179,29 @@ namespace eosio {
          typedef eosio::multi_index< "accounts"_n, account > accounts;
          typedef eosio::multi_index< "stat"_n, currency_stats > stats;
 
-         typedef eosio::multi_index< "chains"_n, chain,
-          indexed_by<"chainid"_n, const_mem_fun<chain, checksum256, &chain::by_chain_id>>> chainstable;
-
          typedef eosio::multi_index< "proofs"_n, validproof,
             indexed_by<"digest"_n, const_mem_fun<validproof, checksum256, &validproof::by_digest>>> proofstable;
       
          typedef eosio::multi_index< "processed"_n, processed,
             indexed_by<"digest"_n, const_mem_fun<processed, checksum256, &processed::by_digest>>> processedtable;
-      
+
+         using globaltable = eosio::singleton<"global"_n, global>;
+
          void add_or_assert(const validproof& proof, const name& prover);
 
          validproof get_proof(const uint64_t proof_id);
 
+         globaltable global_config;
 
         proofstable _proofstable;
         processedtable _processedtable;
-        chainstable _chainstable;
         reserves _reservestable;
 
         token( name receiver, name code, datastream<const char*> ds ) :
         contract(receiver, code, ds),
+        global_config(_self, _self.value),
         _proofstable(bridge_contract, bridge_contract.value),
         _processedtable(_self, _self.value),
-        _chainstable(_self, _self.value),
         _reservestable(_self, _self.value)
         {
         

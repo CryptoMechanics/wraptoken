@@ -31,6 +31,19 @@ void token::add_or_assert(const validproof& proof, const name& payer){
 
 }
 
+void token::init(const checksum256& chain_id, const name& token_contract, const checksum256& paired_chain_id, const name& paired_wraptoken_contract)
+{
+    require_auth( _self );
+
+    auto global = global_config.get_or_create(_self, globalrow);
+    global.chain_id = chain_id;
+    global.token_contract = token_contract;
+    global.paired_chain_id = paired_chain_id;
+    global.paired_wraptoken_contract = paired_wraptoken_contract;
+    global_config.set(global, _self);
+
+}
+
 //creates a new wrapped token, requires a proof of create action
 void token::create(const name& caller, const uint64_t proof_id, const asset&  maximum_supply )
 {
@@ -50,6 +63,10 @@ void token::create(const name& caller, const uint64_t proof_id, const asset&  ma
     add_or_assert(proof, caller);
 
     token::st_create create_act = unpack<token::st_create>(proof.action.data);
+
+    // auto global = global_config.get();
+    // check(proof.chain_id == global.paired_chain_id, "proof chain does not match paired chain");
+    // check(proof.action.account == global.paired_wraptoken_contract, "proof account does not match paired account");
 
     check(maximum_supply.symbol.precision() == create_act.maximum_supply.symbol.precision(), "maximum_supply must use same precision");
     check(maximum_supply.amount == create_act.maximum_supply.amount, "maximum_supply must be of the same amount");
@@ -73,9 +90,13 @@ void token::issue(const name& caller, const uint64_t proof_id)
     token::validproof proof = get_proof(proof_id);
     
     token::xfer lock_act = unpack<token::xfer>(proof.action.data);
+
+    auto global = global_config.get();
+    check(proof.chain_id == global.paired_chain_id, "proof chain does not match paired chain");
+    check(proof.action.account == global.paired_wraptoken_contract, "proof account does not match paired account");
    
     require_auth(caller);
-      
+
     add_or_assert(proof, caller);
 
     auto sym = lock_act.quantity.quantity.symbol;
@@ -87,14 +108,6 @@ void token::issue(const name& caller, const uint64_t proof_id)
     
     check( existing != statstable.end(), "token with symbol does not exist, create token before issue" );
 
-
-    auto cid_index = _chainstable.get_index<"chainid"_n>();
-
-    auto chain_itr = cid_index.find(proof.chain_id);
-
-    check(chain_itr!= cid_index.end(), "chain not supported");
-
-    check(proof.action.account == chain_itr->wrap_contract, "action must originate from lock contract");
     check(proof.action.name == "emitxfer"_n, "must provide proof of token locking before issuing");
 
     const auto& st = *existing;
@@ -116,11 +129,12 @@ void token::issue(const name& caller, const uint64_t proof_id)
 }
 
 //locks a token amount in the reserve for an interchain transfer
-void token::lock(const name& owner,  const extended_asset& quantity, const name& beneficiary, const checksum256& beneficiary_chain_id ){
+void token::lock(const name& owner,  const extended_asset& quantity, const name& beneficiary){
 
   require_auth(owner);
 
   check(quantity.contract != _self, "cannot lock wrapped tokens");
+
 
   sub_external_balance( owner, quantity );
   add_reserve( quantity );
@@ -128,8 +142,7 @@ void token::lock(const name& owner,  const extended_asset& quantity, const name&
   token::xfer x = {
     .owner = owner,
     .quantity = quantity,
-    .beneficiary = beneficiary,
-    .beneficiary_chain_id = beneficiary_chain_id
+    .beneficiary = beneficiary
   };
 
   action act(
@@ -148,7 +161,7 @@ void token::emitxfer(const token::xfer& xfer){
 
 }
 
-void token::retire(const name& owner,  const asset& quantity, const name& beneficiary, const checksum256& beneficiary_chain_id )
+void token::retire(const name& owner,  const asset& quantity, const name& beneficiary)
 {
     require_auth( owner );
 
@@ -174,8 +187,7 @@ void token::retire(const name& owner,  const asset& quantity, const name& benefi
     token::xfer x = {
       .owner = owner,
       .quantity = extended_asset(quantity, existing->source_contract),
-      .beneficiary = beneficiary,
-      .beneficiary_chain_id = beneficiary_chain_id
+      .beneficiary = beneficiary
     };
 
     action act(
@@ -336,6 +348,8 @@ void token::open( const name& owner, const symbol& symbol, const name& ram_payer
       acnts.emplace( ram_payer, [&]( auto& a ){
         a.balance = asset{0, symbol};
       });
+      // auto global = global_config.get();
+      // add_external_balance(owner, extended_asset(asset{0, symbol}, global.token_contract), ram_payer);
    }
 }
 
@@ -358,14 +372,15 @@ void token::deposit(name receiver, name code)
     print("receiver: ", receiver, "\n");
     print("code: ", code, "\n");
     
-    extended_asset xquantity = extended_asset(transfer_data.quantity, receiver);
+    auto global = global_config.get();
+    extended_asset xquantity = extended_asset(transfer_data.quantity, global.token_contract);
 
     //if incoming transfer
     if (transfer_data.from == "eosio.stake"_n) return ; //ignore unstaking transfers
     else if (transfer_data.to == get_self() && receiver != get_self()){
       //ignore outbound transfers from this contract, as well as inbound transfers of tokens internal to this contract
       //otherwise, means it's a deposit of external token from user
-      add_external_balance(transfer_data.from, xquantity, transfer_data.from);
+      add_external_balance(transfer_data.from, xquantity, _self);
 
     }
 
@@ -374,18 +389,20 @@ void token::deposit(name receiver, name code)
 //withdraw tokens (requires a proof of redemption)
 void token::withdraw(const name& caller, const uint64_t proof_id){
 
+    // todo - add ability to withdraw without proof_id, or move that into unlock
+
     require_auth( caller );
 
     token::validproof proof = get_proof(proof_id);
 
     token::xfer redeem_act = unpack<token::xfer>(proof.action.data);
+
+    auto global = global_config.get();
+    check(proof.chain_id == global.paired_chain_id, "proof chain does not match paired chain");
+    check(proof.action.account == global.paired_wraptoken_contract, "proof account does not match paired account");
    
     add_or_assert(proof, caller);
 
-    auto cid_index = _chainstable.get_index<"chainid"_n>();
-    auto chain_itr = cid_index.find(proof.chain_id);
-    check(chain_itr!= cid_index.end(), "chain not supported");
-    check(proof.action.account == chain_itr->wrap_contract, "action must originate from retire contract");
     check(proof.action.name == "emitxfer"_n, "must provide proof of token retiring before issuing");
 
     sub_reserve(redeem_act.quantity);
@@ -399,38 +416,6 @@ void token::withdraw(const name& caller, const uint64_t proof_id){
 
 }
 
-void token::addchain(const checksum256& chain_id, const name& wrap_contract){
-
-    require_auth( _self );
- 
-    auto cid_index =  _chainstable.get_index<"chainid"_n>();
-
-    auto c_itr = cid_index.find(chain_id);
-
-    check(c_itr == cid_index.end(), "chain already added");
-
-    _chainstable.emplace( get_self(), [&]( auto& c ) {
-       c.id = _chainstable.available_primary_key();;
-       c.chain_id = chain_id;
-       c.wrap_contract = wrap_contract;
-    });
-
-}
-
-void token::delchain(const checksum256& chain_id){
-
-   require_auth( _self );
-
-    auto cid_index =  _chainstable.get_index<"chainid"_n>();
-
-    auto c_itr = cid_index.find(chain_id);
-
-    check(c_itr != cid_index.end(), "chain doesn't exist");
-    
-    cid_index.erase(c_itr);
-
-}
-
 void token::test()
 { 
 
@@ -440,6 +425,10 @@ void token::test()
 
 void token::clear()
 { 
+
+  // todo - tidy this so all data is cleared (iterate over scopes)
+
+  // if (global_config.exists()) global_config.remove();
 
   accounts a_table( get_self(), "genesis11111"_n.value);
   extaccounts e_table( get_self(), "genesis11111"_n.value);
@@ -481,12 +470,6 @@ void token::clear()
     auto itr = _proofstable.end();
     itr--;
     _proofstable.erase(itr);
-  }
-
-  while (_chainstable.begin() != _chainstable.end()) {
-    auto itr = _chainstable.end();
-    itr--;
-    _chainstable.erase(itr);
   }
 
   while (_proofstable.begin() != _proofstable.end()) {
