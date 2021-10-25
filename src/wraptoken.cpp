@@ -337,30 +337,21 @@ void token::open( const name& owner, const symbol& symbol, const name& ram_payer
 
    check( is_account( owner ), "owner account does not exist" );
 
-   auto sym_code_raw = symbol.code().raw();
-   stats statstable( get_self(), sym_code_raw );
-   const auto& st = statstable.get( sym_code_raw, "symbol does not exist" );
-   check( st.supply.symbol == symbol, "symbol precision mismatch" );
+   auto global = global_config.get();
+   add_external_balance(owner, extended_asset(asset{0, symbol}, global.token_contract), ram_payer);
 
-   accounts acnts( get_self(), owner.value );
-   auto it = acnts.find( sym_code_raw );
-   if( it == acnts.end() ) {
-      acnts.emplace( ram_payer, [&]( auto& a ){
-        a.balance = asset{0, symbol};
-      });
-      // auto global = global_config.get();
-      // add_external_balance(owner, extended_asset(asset{0, symbol}, global.token_contract), ram_payer);
-   }
 }
 
 void token::close( const name& owner, const symbol& symbol )
 {
    require_auth( owner );
-   accounts acnts( get_self(), owner.value );
-   auto it = acnts.find( symbol.code().raw() );
-   check( it != acnts.end(), "Balance row already deleted or never existed. Action won't have any effect." );
-   check( it->balance.amount == 0, "Cannot close because the balance is not zero." );
-   acnts.erase( it );
+
+   extaccounts to_acnts( get_self(), owner.value );
+   auto to = to_acnts.find( symbol.code().raw() );
+
+   check( to != to_acnts.end(), "Balance row already deleted or never existed. Action won't have any effect." );
+   check( to->balance.quantity.amount == 0, "Cannot close because the balance is not zero." );
+   to_acnts.erase( to );
 }
 
 void token::deposit(name receiver, name code)
