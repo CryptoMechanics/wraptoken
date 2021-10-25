@@ -127,11 +127,11 @@ namespace eosio {
          void retire(const name& owner,  const asset& quantity, const name& beneficiary);
 
 
-         [[eosio::action]]
-         void transfer( const name&    from,
-                        const name&    to,
-                        const asset&   quantity,
-                        const string&  memo );
+         // [[eosio::action]]
+         // void transfer( const name&    from,
+         //                const name&    to,
+         //                const asset&   quantity,
+         //                const string&  memo );
   
          [[eosio::action]]
          void open( const name& owner, const symbol& symbol, const name& ram_payer );
@@ -203,7 +203,7 @@ namespace eosio {
          using create_action = eosio::action_wrapper<"create"_n, &token::create>;
          using issue_action = eosio::action_wrapper<"issue"_n, &token::issue>;
          using retire_action = eosio::action_wrapper<"retire"_n, &token::retire>;
-         using transfer_action = eosio::action_wrapper<"transfer"_n, &token::transfer>;
+         // using transfer_action = eosio::action_wrapper<"transfer"_n, &token::transfer>;
          using open_action = eosio::action_wrapper<"open"_n, &token::open>;
          using close_action = eosio::action_wrapper<"close"_n, &token::close>;
    };
