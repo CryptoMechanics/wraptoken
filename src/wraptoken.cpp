@@ -354,27 +354,23 @@ void token::close( const name& owner, const symbol& symbol )
    to_acnts.erase( to );
 }
 
-void token::deposit(name receiver, name code)
+void token::deposit(name from, name to, asset quantity, string memo)
 { 
 
-    auto transfer_data = unpack_action_data<st_transfer>();
-
-    print("transfer ", name{transfer_data.from}, " ",  name{transfer_data.to}, " ", transfer_data.quantity, "\n");
-    print("receiver: ", receiver, "\n");
-    print("code: ", code, "\n");
+    print("transfer ", name{from}, " ",  name{to}, " ", quantity, "\n");
     print("sender: ", get_sender(), "\n");
     
     auto global = global_config.get();
     check(get_sender() == global.token_contract, "transfer not permitted from unauthorised token contract");
 
-    extended_asset xquantity = extended_asset(transfer_data.quantity, global.token_contract);
+    extended_asset xquantity = extended_asset(quantity, global.token_contract);
 
     //if incoming transfer
-    if (transfer_data.from == "eosio.stake"_n) return ; //ignore unstaking transfers
-    else if (transfer_data.to == get_self() && receiver != get_self()){
+    if (from == "eosio.stake"_n) return ; //ignore unstaking transfers
+    else if (to == get_self() && from != get_self()){
       //ignore outbound transfers from this contract, as well as inbound transfers of tokens internal to this contract
       //otherwise, means it's a deposit of external token from user
-      add_external_balance(transfer_data.from, xquantity, transfer_data.from);
+      add_external_balance(from, xquantity, from);
 
     }
 
