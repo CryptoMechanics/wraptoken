@@ -24,13 +24,6 @@ namespace eosio {
           asset         maximum_supply;
         };
 
-        struct st_transfer {
-          name          from;
-          name          to;
-          asset         quantity;
-          std::string   memo;
-        };
-
          struct [[eosio::table]] global {
             checksum256   chain_id;
             name          token_contract;
@@ -156,7 +149,7 @@ namespace eosio {
          [[eosio::action]]
          void clear();
 
-        [[eosio::on_notify("*::transfer")]] void deposit(name receiver, name code);
+        [[eosio::on_notify("*::transfer")]] void deposit(name from, name to, asset quantity, string memo);
 
          static asset get_supply( const name& token_contract_account, const symbol_code& sym_code )
          {
