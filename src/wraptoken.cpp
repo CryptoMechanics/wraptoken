@@ -47,6 +47,8 @@ void token::init(const checksum256& chain_id, const checksum256& paired_chain_id
 //creates a new wrapped token, requires a proof of create action
 void token::create(const name& caller, const uint64_t proof_id, const asset&  maximum_supply )
 {
+    check(global_config.exists(), "contract must be initialized first");
+
     require_auth( caller );
 
     auto sym = maximum_supply.symbol;
@@ -86,6 +88,8 @@ void token::create(const name& caller, const uint64_t proof_id, const asset&  ma
 //Issue mints the wrapped token, requires a proof of the lock action
 void token::issue(const name& caller, const uint64_t proof_id)
 {
+
+    check(global_config.exists(), "contract must be initialized first");
     
     token::validproof proof = get_proof(proof_id);
     
@@ -124,12 +128,14 @@ void token::issue(const name& caller, const uint64_t proof_id)
        s.supply += lock_act.quantity.quantity;
     });
 
-    add_internal_balance( lock_act.beneficiary, lock_act.quantity.quantity, lock_act.beneficiary );
+    add_balance( lock_act.beneficiary, lock_act.quantity.quantity, lock_act.beneficiary );
     
 }
 
 //emits an xfer receipt to serve as proof in interchain transfers
 void token::emitxfer(const token::xfer& xfer){
+
+ check(global_config.exists(), "contract must be initialized first");
  
  require_auth(_self);
 
@@ -137,6 +143,8 @@ void token::emitxfer(const token::xfer& xfer){
 
 void token::retire(const name& owner,  const asset& quantity, const name& beneficiary)
 {
+    check(global_config.exists(), "contract must be initialized first");
+
     require_auth( owner );
 
     auto sym = quantity.symbol;
@@ -156,7 +164,7 @@ void token::retire(const name& owner,  const asset& quantity, const name& benefi
        s.supply -= quantity;
     });
 
-    sub_internal_balance( owner, quantity );
+    sub_balance( owner, quantity );
 
     token::xfer x = {
       .owner = owner,
@@ -178,6 +186,8 @@ void token::transfer( const name&    from,
                       const asset&   quantity,
                       const string&  memo )
 {
+    check(global_config.exists(), "contract must be initialized first");
+
     check( from != to, "cannot transfer to self" );
     require_auth( from );
     check( is_account( to ), "to account does not exist");
@@ -195,11 +205,11 @@ void token::transfer( const name&    from,
 
     auto payer = has_auth( to ) ? to : from;
 
-    sub_internal_balance( from, quantity );
-    add_internal_balance( to, quantity, payer );
+    sub_balance( from, quantity );
+    add_balance( to, quantity, payer );
 }
 
-void token::sub_internal_balance( const name& owner, const asset& value ){
+void token::sub_balance( const name& owner, const asset& value ){
 
    accounts from_acnts( get_self(), owner.value );
 
@@ -211,7 +221,7 @@ void token::sub_internal_balance( const name& owner, const asset& value ){
       });
 }
 
-void token::add_internal_balance( const name& owner, const asset& value, const name& ram_payer ){
+void token::add_balance( const name& owner, const asset& value, const name& ram_payer ){
 
    accounts to_acnts( get_self(), owner.value );
    auto to = to_acnts.find( value.symbol.code().raw() );
@@ -229,6 +239,8 @@ void token::add_internal_balance( const name& owner, const asset& value, const n
 
 void token::open( const name& owner, const symbol& symbol, const name& ram_payer )
 {
+   check(global_config.exists(), "contract must be initialized first");
+
    require_auth( ram_payer );
 
    check( is_account( owner ), "owner account does not exist" );
@@ -250,6 +262,8 @@ void token::open( const name& owner, const symbol& symbol, const name& ram_payer
 
 void token::close( const name& owner, const symbol& symbol )
 {
+   check(global_config.exists(), "contract must be initialized first");
+
    require_auth( owner );
    accounts acnts( get_self(), owner.value );
    auto it = acnts.find( symbol.code().raw() );
@@ -261,6 +275,7 @@ void token::close( const name& owner, const symbol& symbol )
 
 void token::clear()
 { 
+  check(global_config.exists(), "contract must be initialized first");
 
   // todo - tidy this so all data is cleared (iterate over scopes)
 

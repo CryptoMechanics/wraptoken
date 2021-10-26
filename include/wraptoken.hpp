@@ -52,8 +52,8 @@ namespace eosio {
          };
 
 
-         void sub_internal_balance( const name& owner, const asset& value );
-         void add_internal_balance( const name& owner, const asset& value, const name& ram_payer );
+         void sub_balance( const name& owner, const asset& value );
+         void add_balance( const name& owner, const asset& value, const name& ram_payer );
 
       public:
          using contract::contract;
