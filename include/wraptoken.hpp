@@ -127,11 +127,11 @@ namespace eosio {
          void retire(const name& owner,  const asset& quantity, const name& beneficiary);
 
 
-         // [[eosio::action]]
-         // void transfer( const name&    from,
-         //                const name&    to,
-         //                const asset&   quantity,
-         //                const string&  memo );
+         [[eosio::action]]
+         void transfer( const name&    from,
+                        const name&    to,
+                        const asset&   quantity,
+                        const string&  memo );
   
          [[eosio::action]]
          void open( const name& owner, const symbol& symbol, const name& ram_payer );
