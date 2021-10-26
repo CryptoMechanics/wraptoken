@@ -26,7 +26,6 @@ namespace eosio {
 
          struct [[eosio::table]] global {
             checksum256   chain_id;
-            name          token_contract;
             checksum256   paired_chain_id;
             name          paired_wraptoken_contract;
          } globalrow;
@@ -108,7 +107,7 @@ namespace eosio {
 
 
          [[eosio::action]]
-         void init(const checksum256& chain_id, const name& token_contract, const checksum256& paired_chain_id, const name& paired_wraptoken_contract);
+         void init(const checksum256& chain_id, const checksum256& paired_chain_id, const name& paired_wraptoken_contract);
 
          [[eosio::action]]
          void create(const name& caller, const uint64_t proof_id, const asset&  maximum_supply);
@@ -117,12 +116,6 @@ namespace eosio {
          void issue(const name& caller, const uint64_t proof_id);
 
 
-         [[eosio::action]]
-         void lock(const name& owner,  const extended_asset& quantity, const name& beneficiary);
-
-         [[eosio::action]]
-         void withdraw(const name& caller, const uint64_t proof_id);
-      
          [[eosio::action]]
          void retire(const name& owner,  const asset& quantity, const name& beneficiary);
 
@@ -144,12 +137,7 @@ namespace eosio {
          void emitxfer(const token::xfer& xfer);
 
          [[eosio::action]]
-         void test();
-
-         [[eosio::action]]
          void clear();
-
-        [[eosio::on_notify("*::transfer")]] void deposit(name from, name to, asset quantity, string memo);
 
          static asset get_supply( const name& token_contract_account, const symbol_code& sym_code )
          {
@@ -203,7 +191,7 @@ namespace eosio {
          using create_action = eosio::action_wrapper<"create"_n, &token::create>;
          using issue_action = eosio::action_wrapper<"issue"_n, &token::issue>;
          using retire_action = eosio::action_wrapper<"retire"_n, &token::retire>;
-         // using transfer_action = eosio::action_wrapper<"transfer"_n, &token::transfer>;
+         using transfer_action = eosio::action_wrapper<"transfer"_n, &token::transfer>;
          using open_action = eosio::action_wrapper<"open"_n, &token::open>;
          using close_action = eosio::action_wrapper<"close"_n, &token::close>;
    };
