@@ -6,6 +6,8 @@ namespace eosio {
 //fetches proof from the bridge contract
 token::validproof token::get_proof(const uint64_t proof_id){
 
+  auto global = global_config.get();
+  proofstable _proofstable(global.bridge_contract, global.bridge_contract.value);
   auto p = _proofstable.find(proof_id);
 
   check(p != _proofstable.end(), "proof not found");
@@ -31,12 +33,13 @@ void token::add_or_assert(const validproof& proof, const name& payer){
 
 }
 
-void token::init(const checksum256& chain_id, const checksum256& paired_chain_id, const name& paired_wraplock_contract, const name& paired_token_contract)
+void token::init(const checksum256& chain_id, const name& bridge_contract, const checksum256& paired_chain_id, const name& paired_wraplock_contract, const name& paired_token_contract)
 {
     require_auth( _self );
 
     auto global = global_config.get_or_create(_self, globalrow);
     global.chain_id = chain_id;
+    global.bridge_contract = bridge_contract;
     global.paired_chain_id = paired_chain_id;
     global.paired_wraplock_contract = paired_wraplock_contract;
     global.paired_token_contract = paired_token_contract;
@@ -304,6 +307,9 @@ void token::clear()
     a_table.erase(itr);
   }
 
+  auto global = global_config.get();
+  proofstable _proofstable(global.bridge_contract, global.bridge_contract.value);
+  
   while (_proofstable.begin() != _proofstable.end()) {
     auto itr = _proofstable.end();
     itr--;
