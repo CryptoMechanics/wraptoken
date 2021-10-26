@@ -37,12 +37,6 @@ namespace eosio {
             uint64_t primary_key()const { return balance.symbol.code().raw(); }
          };
 
-         struct [[eosio::table]] extaccount {
-            extended_asset    balance;
-
-            uint64_t primary_key()const { return balance.quantity.symbol.code().raw(); }
-         };
-
          struct [[eosio::table]] currency_stats {
 
             //uniquely identify source information
