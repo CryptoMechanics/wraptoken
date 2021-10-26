@@ -233,13 +233,29 @@ void token::open( const name& owner, const symbol& symbol, const name& ram_payer
 
    check( is_account( owner ), "owner account does not exist" );
 
-   add_internal_balance(owner, asset{0, symbol}, ram_payer);
+   auto sym_code_raw = symbol.code().raw();
+   stats statstable( get_self(), sym_code_raw );
+   const auto& st = statstable.get( sym_code_raw, "symbol does not exist" );
+   check( st.supply.symbol == symbol, "symbol precision mismatch" );
+
+   accounts acnts( get_self(), owner.value );
+   auto it = acnts.find( sym_code_raw );
+   if( it == acnts.end() ) {
+      acnts.emplace( ram_payer, [&]( auto& a ){
+        a.balance = asset{0, symbol};
+      });
+   }
 
 }
 
 void token::close( const name& owner, const symbol& symbol )
 {
    require_auth( owner );
+   accounts acnts( get_self(), owner.value );
+   auto it = acnts.find( symbol.code().raw() );
+   check( it != acnts.end(), "Balance row already deleted or never existed. Action won't have any effect." );
+   check( it->balance.amount == 0, "Cannot close because the balance is not zero." );
+   acnts.erase( it );
 
 }
 
@@ -251,7 +267,6 @@ void token::clear()
   // if (global_config.exists()) global_config.remove();
 
   accounts a_table( get_self(), "genesis11111"_n.value);
-  extaccounts e_table( get_self(), "genesis11111"_n.value);
 
   stats s1_table( get_self(), symbol_code("UTX").raw());
   stats s2_table( get_self(), symbol_code("OOO").raw());
@@ -272,18 +287,6 @@ void token::clear()
     auto itr = a_table.end();
     itr--;
     a_table.erase(itr);
-  }
-
-  while (e_table.begin() != e_table.end()) {
-    auto itr = e_table.end();
-    itr--;
-    e_table.erase(itr);
-  }
-
-  while (_reservestable.begin() != _reservestable.end()) {
-    auto itr = _reservestable.end();
-    itr--;
-    _reservestable.erase(itr);
   }
 
   while (_proofstable.begin() != _proofstable.end()) {

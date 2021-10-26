@@ -58,17 +58,8 @@ namespace eosio {
          };
 
 
-/*         void sub_balance( const name& owner, const asset& value );
-         void add_balance( const name& owner, const asset& value, const name& ram_payer );
-*/
          void sub_internal_balance( const name& owner, const asset& value );
          void add_internal_balance( const name& owner, const asset& value, const name& ram_payer );
-
-         void sub_external_balance( const name& owner, const extended_asset& value );
-         void add_external_balance( const name& owner, const extended_asset& value, const name& ram_payer );
-
-         void sub_reserve(const extended_asset& value );
-         void add_reserve(const extended_asset& value );
 
       public:
          using contract::contract;
@@ -155,9 +146,6 @@ namespace eosio {
          }
 
 
-         typedef eosio::multi_index< "extaccounts"_n, extaccount > extaccounts;
-         typedef eosio::multi_index< "reserves"_n, extaccount > reserves;
-
          typedef eosio::multi_index< "accounts"_n, account > accounts;
          typedef eosio::multi_index< "stat"_n, currency_stats > stats;
 
@@ -177,14 +165,12 @@ namespace eosio {
 
         proofstable _proofstable;
         processedtable _processedtable;
-        reserves _reservestable;
 
         token( name receiver, name code, datastream<const char*> ds ) :
         contract(receiver, code, ds),
         global_config(_self, _self.value),
         _proofstable(bridge_contract, bridge_contract.value),
-        _processedtable(_self, _self.value),
-        _reservestable(_self, _self.value)
+        _processedtable(_self, _self.value)
         {
         
         }
