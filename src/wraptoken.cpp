@@ -31,14 +31,15 @@ void token::add_or_assert(const validproof& proof, const name& payer){
 
 }
 
-void token::init(const checksum256& chain_id, const checksum256& paired_chain_id, const name& paired_wraptoken_contract)
+void token::init(const checksum256& chain_id, const checksum256& paired_chain_id, const name& paired_wraplock_contract, const name& paired_token_contract)
 {
     require_auth( _self );
 
     auto global = global_config.get_or_create(_self, globalrow);
     global.chain_id = chain_id;
     global.paired_chain_id = paired_chain_id;
-    global.paired_wraptoken_contract = paired_wraptoken_contract;
+    global.paired_wraplock_contract = paired_wraplock_contract;
+    global.paired_token_contract = paired_token_contract;
     global_config.set(global, _self);
 
 }
@@ -63,9 +64,9 @@ void token::create(const name& caller, const uint64_t proof_id, const asset&  ma
 
     token::st_create create_act = unpack<token::st_create>(proof.action.data);
 
-    // auto global = global_config.get();
-    // check(proof.chain_id == global.paired_chain_id, "proof chain does not match paired chain");
-    // check(proof.action.account == global.paired_wraptoken_contract, "proof account does not match paired account");
+    auto global = global_config.get();
+    check(proof.chain_id == global.paired_chain_id, "proof chain does not match paired chain");
+    check(proof.action.account == global.paired_token_contract, "proof account does not match paired token account");
 
     check(maximum_supply.symbol.precision() == create_act.maximum_supply.symbol.precision(), "maximum_supply must use same precision");
     check(maximum_supply.amount == create_act.maximum_supply.amount, "maximum_supply must be of the same amount");
@@ -92,7 +93,7 @@ void token::issue(const name& caller, const uint64_t proof_id)
 
     auto global = global_config.get();
     check(proof.chain_id == global.paired_chain_id, "proof chain does not match paired chain");
-    check(proof.action.account == global.paired_wraptoken_contract, "proof account does not match paired account");
+    check(proof.action.account == global.paired_wraplock_contract, "proof account does not match paired wraplock account");
    
     require_auth(caller);
 

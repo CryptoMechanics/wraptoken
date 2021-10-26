@@ -27,7 +27,8 @@ namespace eosio {
          struct [[eosio::table]] global {
             checksum256   chain_id;
             checksum256   paired_chain_id;
-            name          paired_wraptoken_contract;
+            name          paired_wraplock_contract;
+            name          paired_token_contract;
          } globalrow;
 
          struct [[eosio::table]] account {
@@ -107,7 +108,7 @@ namespace eosio {
 
 
          [[eosio::action]]
-         void init(const checksum256& chain_id, const checksum256& paired_chain_id, const name& paired_wraptoken_contract);
+         void init(const checksum256& chain_id, const checksum256& paired_chain_id, const name& paired_wraptoken_contract, const name& paired_token_contract);
 
          [[eosio::action]]
          void create(const name& caller, const uint64_t proof_id, const asset&  maximum_supply);
