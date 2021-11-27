@@ -17,11 +17,6 @@ namespace eosio {
    class [[eosio::contract("wraptoken")]] token : public contract {
       private:
 
-        struct st_create {
-          name          issuer;
-          asset         maximum_supply;
-        };
-
          struct [[eosio::table]] global {
             checksum256   chain_id;
             name          bridge_contract;
@@ -95,9 +90,6 @@ namespace eosio {
          void init(const checksum256& chain_id, const name& bridge_contract, const checksum256& paired_chain_id, const name& paired_wraptoken_contract, const name& paired_token_contract);
 
          [[eosio::action]]
-         void create(const name& caller, const uint64_t proof_id, const asset&  maximum_supply);
-    
-         [[eosio::action]]
          void issue(const name& caller, const uint64_t proof_id);
 
 
@@ -166,7 +158,6 @@ namespace eosio {
         
         }
         
-         using create_action = eosio::action_wrapper<"create"_n, &token::create>;
          using issue_action = eosio::action_wrapper<"issue"_n, &token::issue>;
          using retire_action = eosio::action_wrapper<"retire"_n, &token::retire>;
          using transfer_action = eosio::action_wrapper<"transfer"_n, &token::transfer>;

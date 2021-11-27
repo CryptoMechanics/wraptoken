@@ -47,47 +47,6 @@ void token::init(const checksum256& chain_id, const name& bridge_contract, const
 
 }
 
-//creates a new wrapped token, requires a proof of create action
-void token::create(const name& caller, const uint64_t proof_id, const asset&  maximum_supply )
-{
-    check(global_config.exists(), "contract must be initialized first");
-
-    require_auth( caller );
-
-    auto sym = maximum_supply.symbol;
-    check( sym.is_valid(), "invalid symbol name" );
-    check( maximum_supply.is_valid(), "invalid supply");
-    check( maximum_supply.amount > 0, "max-supply must be positive");
-
-    stats statstable( get_self(), sym.code().raw() );
-    auto existing = statstable.find( sym.code().raw() );
-    check( existing == statstable.end(), "token with symbol already exists" );
-
-    token::validproof proof = get_proof(proof_id);
-
-    add_or_assert(proof, caller);
-
-    token::st_create create_act = unpack<token::st_create>(proof.action.data);
-
-    auto global = global_config.get();
-    check(proof.chain_id == global.paired_chain_id, "proof chain does not match paired chain");
-    check(proof.action.account == global.paired_token_contract, "proof account does not match paired token account");
-
-    check(maximum_supply.symbol.precision() == create_act.maximum_supply.symbol.precision(), "maximum_supply must use same precision");
-    check(maximum_supply.amount == create_act.maximum_supply.amount, "maximum_supply must be of the same amount");
-
-    statstable.emplace( get_self(), [&]( auto& s ) {
-       s.source_chain_id = proof.chain_id;
-       s.source_contract = proof.action.account;
-       s.source_symbol = create_act.maximum_supply.symbol.code();
-       s.supply = asset(0, maximum_supply.symbol);
-       s.max_supply    = maximum_supply;
-       s.issuer        = get_self();
-    });
-
-
-}
-
 //Issue mints the wrapped token, requires a proof of the lock action
 void token::issue(const name& caller, const uint64_t proof_id)
 {
@@ -112,15 +71,26 @@ void token::issue(const name& caller, const uint64_t proof_id)
 
     stats statstable( get_self(), sym.code().raw() );
     auto existing = statstable.find( sym.code().raw() );
+
+    // create if no existing matching symbol exists
+    if (existing == statstable.end()) {
+        statstable.emplace( get_self(), [&]( auto& s ) {
+           s.source_chain_id = global.paired_chain_id; // todo - check this doesn't introduce vulnerability
+           s.source_contract = global.paired_token_contract; // todo - check this doesn't introduce vulnerability
+           s.source_symbol = sym.code();
+           s.supply = asset(0, sym);
+           s.max_supply = asset((1LL<<62)-1, sym);
+           s.issuer = get_self();
+        });
+        existing = statstable.find( sym.code().raw() );
+    }
     
     check( existing != statstable.end(), "token with symbol does not exist, create token before issue" );
 
     check(proof.action.name == "emitxfer"_n, "must provide proof of token locking before issuing");
 
     const auto& st = *existing;
-    //check( to == st.issuer, "tokens can only be issued to issuer account" );
 
-    //require_auth( st.issuer );
     check( lock_act.quantity.quantity.is_valid(), "invalid quantity" );
     check( lock_act.quantity.quantity.amount > 0, "must issue positive quantity" );
 
