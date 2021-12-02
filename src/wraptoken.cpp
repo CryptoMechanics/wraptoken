@@ -4,15 +4,17 @@ namespace eosio {
 
 
 //fetches proof from the bridge contract
-token::validproof token::get_proof(const uint64_t proof_id){
+token::validproof token::get_proof(const checksum256 action_receipt_digest){
 
   auto global = global_config.get();
+
   proofstable _proofstable(global.bridge_contract, global.bridge_contract.value);
-  auto p = _proofstable.find(proof_id);
+  auto pid_index = _proofstable.get_index<"digest"_n>();
+  auto p_itr = pid_index.find(action_receipt_digest);
 
-  check(p != _proofstable.end(), "proof not found");
+  check(p_itr != pid_index.end(), "proof not found");
 
-  return *p;
+  return *p_itr;
 
 }
 
@@ -48,12 +50,12 @@ void token::init(const checksum256& chain_id, const name& bridge_contract, const
 }
 
 //Issue mints the wrapped token, requires a proof of the lock action
-void token::issue(const name& caller, const uint64_t proof_id)
+void token::issue(const name& caller, const checksum256 action_receipt_digest)
 {
 
     check(global_config.exists(), "contract must be initialized first");
     
-    token::validproof proof = get_proof(proof_id);
+    token::validproof proof = get_proof(action_receipt_digest);
     
     token::xfer lock_act = unpack<token::xfer>(proof.action.data);
 
