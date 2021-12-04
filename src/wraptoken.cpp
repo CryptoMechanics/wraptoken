@@ -103,7 +103,18 @@ void token::issue(const name& caller, const checksum256 action_receipt_digest)
        s.supply += lock_act.quantity.quantity;
     });
 
-    add_balance( lock_act.beneficiary, lock_act.quantity.quantity, lock_act.beneficiary );
+    add_balance( _self, lock_act.quantity.quantity, lock_act.beneficiary );
+
+    // ensure beneficiary has a balance
+    add_balance( lock_act.beneficiary, asset(0, lock_act.quantity.quantity.symbol), caller );
+
+    // transfer to beneficiary
+    action act(
+      permission_level{_self, "active"_n},
+      _self, "transfer"_n,
+      std::make_tuple(_self, lock_act.beneficiary, lock_act.quantity.quantity, ""_n)
+    );
+    act.send();
     
 }
 
