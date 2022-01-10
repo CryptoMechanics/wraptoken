@@ -33,14 +33,14 @@ namespace eosio {
 
          struct [[eosio::table]] currency_stats {
 
+            asset         supply;
+            asset         max_supply;
+            name          issuer;
+
             //uniquely identify source information
             name          source_contract;
             checksum256   source_chain_id;
             symbol_code   source_symbol;
-
-            asset         supply;
-            asset         max_supply;
-            name          issuer;
 
             uint64_t primary_key()const { return supply.symbol.code().raw(); }
          };
