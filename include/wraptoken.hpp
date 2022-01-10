@@ -37,11 +37,6 @@ namespace eosio {
             asset         max_supply;
             name          issuer;
 
-            //uniquely identify source information
-            name          source_contract;
-            checksum256   source_chain_id;
-            symbol_code   source_symbol;
-
             uint64_t primary_key()const { return supply.symbol.code().raw(); }
          };
 

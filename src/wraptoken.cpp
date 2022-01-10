@@ -77,9 +77,6 @@ void token::issue(const name& caller, const checksum256 action_receipt_digest)
     // create if no existing matching symbol exists
     if (existing == statstable.end()) {
         statstable.emplace( get_self(), [&]( auto& s ) {
-           s.source_chain_id = global.paired_chain_id; // todo - check this doesn't introduce vulnerability
-           s.source_contract = global.paired_token_contract; // todo - check this doesn't introduce vulnerability
-           s.source_symbol = sym.code();
            s.supply = asset(0, sym);
            s.max_supply = asset((1LL<<62)-1, sym);
            s.issuer = get_self();
@@ -133,6 +130,8 @@ void token::retire(const name& owner,  const asset& quantity, const name& benefi
 
     require_auth( owner );
 
+    auto global = global_config.get();
+
     auto sym = quantity.symbol;
     check( sym.is_valid(), "invalid symbol name" );
 
@@ -154,7 +153,7 @@ void token::retire(const name& owner,  const asset& quantity, const name& benefi
 
     token::xfer x = {
       .owner = owner,
-      .quantity = extended_asset(quantity, existing->source_contract),
+      .quantity = extended_asset(quantity, global.paired_token_contract),
       .beneficiary = beneficiary
     };
 
