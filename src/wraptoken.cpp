@@ -271,6 +271,8 @@ void token::clear()
 
   stats s1_table( get_self(), symbol_code("UTX").raw());
   stats s2_table( get_self(), symbol_code("OOO").raw());
+  stats s3_table( get_self(), symbol_code("EOS").raw());
+  stats s4_table( get_self(), symbol_code("TEST").raw());
 
   while (s1_table.begin() != s1_table.end()) {
     auto itr = s1_table.end();
@@ -284,25 +286,28 @@ void token::clear()
     s2_table.erase(itr);
   }
 
+  while (s3_table.begin() != s3_table.end()) {
+    auto itr = s3_table.end();
+    itr--;
+    s3_table.erase(itr);
+  }
+
+  while (s4_table.begin() != s4_table.end()) {
+    auto itr = s4_table.end();
+    itr--;
+    s4_table.erase(itr);
+  }
+
   while (a_table.begin() != a_table.end()) {
     auto itr = a_table.end();
     itr--;
     a_table.erase(itr);
   }
 
-  auto global = global_config.get();
-  proofstable _proofstable(global.bridge_contract, global.bridge_contract.value);
-  
-  while (_proofstable.begin() != _proofstable.end()) {
-    auto itr = _proofstable.end();
+  while (_processedtable.begin() != _processedtable.end()) {
+    auto itr = _processedtable.end();
     itr--;
-    _proofstable.erase(itr);
-  }
-
-  while (_proofstable.begin() != _proofstable.end()) {
-    auto itr = _proofstable.end();
-    itr--;
-    _proofstable.erase(itr);
+    _processedtable.erase(itr);
   }
 
 /*
