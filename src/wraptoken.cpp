@@ -161,7 +161,8 @@ void token::retire(const name& owner,  const asset& quantity, const name& benefi
     token::xfer x = {
       .owner = owner,
       .quantity = extended_asset(quantity, global.paired_token_contract),
-      .beneficiary = beneficiary
+      .beneficiary = beneficiary,
+      .staked = global.paired_token_staked
     };
 
     action act(
