@@ -35,7 +35,7 @@ void token::add_or_assert(const validproof& proof, const name& payer){
 
 }
 
-void token::init(const checksum256& chain_id, const name& bridge_contract, const checksum256& paired_chain_id, const name& paired_wraplock_contract, const name& paired_token_contract)
+void token::init(const checksum256& chain_id, const name& bridge_contract, const checksum256& paired_chain_id, const name& paired_wraplock_contract, const name& paired_token_contract, const bool paired_token_staked)
 {
     require_auth( _self );
 
@@ -45,6 +45,7 @@ void token::init(const checksum256& chain_id, const name& bridge_contract, const
     global.paired_chain_id = paired_chain_id;
     global.paired_wraplock_contract = paired_wraplock_contract;
     global.paired_token_contract = paired_token_contract;
+    global.paired_token_staked = paired_token_staked;
     global_config.set(global, _self);
 
 }
@@ -70,6 +71,12 @@ void token::issue(const name& caller, const checksum256 action_receipt_digest)
     auto sym = lock_act.quantity.quantity.symbol;
     check( sym.is_valid(), "invalid symbol name" );
     //check( memo.size() <= 256, "memo has more than 256 bytes" );
+
+    if (global.paired_token_staked) {
+        check(lock_act.staked, "native token was not staked, which this contract requires");
+    } else {
+        check(!lock_act.staked, "native token was staked, which this contract prohibits");
+    }
 
     stats statstable( get_self(), sym.code().raw() );
     auto existing = statstable.find( sym.code().raw() );

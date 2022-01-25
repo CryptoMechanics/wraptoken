@@ -23,6 +23,7 @@ namespace eosio {
             checksum256   paired_chain_id;
             name          paired_wraplock_contract;
             name          paired_token_contract;
+            bool          paired_token_staked;
          } globalrow;
 
          struct [[eosio::table]] account {
@@ -78,11 +79,12 @@ namespace eosio {
            name             owner;
            extended_asset   quantity;
            name             beneficiary;
+           bool             staked;
          };
 
 
          [[eosio::action]]
-         void init(const checksum256& chain_id, const name& bridge_contract, const checksum256& paired_chain_id, const name& paired_wraptoken_contract, const name& paired_token_contract);
+         void init(const checksum256& chain_id, const name& bridge_contract, const checksum256& paired_chain_id, const name& paired_wraptoken_contract, const name& paired_token_contract, const bool paired_token_staked);
 
          [[eosio::action]]
          void issue(const name& caller, const checksum256 action_receipt_digest);
